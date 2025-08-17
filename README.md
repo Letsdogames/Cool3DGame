@@ -13,8 +13,8 @@
     }
     body {
       font-family: Arial, sans-serif;
-      background-color: #2c2f33; /* Light dark background */
-      color: #e0e0e0; /* Light text for contrast */
+      background-color: #2c2f33;
+      color: #e0e0e0;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -22,7 +22,7 @@
       padding: 15px;
     }
     h1 {
-      color: #4da8ff; /* Brighter blue for contrast */
+      color: #4da8ff;
       font-size: clamp(1.5rem, 5vw, 2rem);
       font-weight: bold;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
@@ -31,7 +31,7 @@
     }
     h2 {
       font-size: clamp(0.85rem, 3.5vw, 1rem);
-      color: #d0d0d0; /* Light gray for readability */
+      color: #d0d0d0;
       text-align: center;
       max-width: 90%;
       margin: 0 0 20px;
@@ -46,7 +46,7 @@
       position: relative;
     }
     .panel {
-      background-color: #3a3d41; /* Slightly lighter than body for contrast */
+      background-color: #3a3d41;
       padding: 15px;
       border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
@@ -92,6 +92,25 @@
     .arrow-down {
       color: #dc3545;
     }
+    .bought-price {
+      font-size: clamp(0.7rem, 2vw, 0.8rem);
+      color: #b0b0b0;
+      margin-left: 8px;
+      display: inline;
+    }
+    .profit-loss {
+      font-size: clamp(0.65rem, 1.8vw, 0.75rem);
+      margin-top: 4px;
+      display: block;
+      padding-left: 18px;
+    }
+    .total-value {
+      font-size: clamp(0.65rem, 1.8vw, 0.75rem);
+      margin-top: 4px;
+      display: block;
+      padding-left: 18px;
+      color: #b0b0b0;
+    }
     #action-panel h3 {
       margin: 0 0 10px;
       font-size: clamp(1rem, 3vw, 1.2rem);
@@ -123,7 +142,7 @@
     }
     #confirmation p {
       font-weight: bold;
-      color: #ff6b6b; /* Brighter red for contrast */
+      color: #ff6b6b;
       font-size: clamp(0.85rem, 2.5vw, 0.95rem);
     }
     #quantity-controls {
@@ -354,7 +373,7 @@
     let cash = 400;
     const portfolio = {};
     stocks.forEach(stock => {
-      portfolio[stock.symbol] = 0;
+      portfolio[stock.symbol] = { shares: 0, purchases: [] };
       const changePercent = (Math.random() - 0.5) * 10;
       stock.prevPrice = stock.price / (1 + changePercent / 100);
       stock.price = Math.max(10, Math.min(500, stock.price));
@@ -372,7 +391,7 @@
       selectedStocks.forEach(stock => {
         const currentPercent = stock.prevPrice ? ((stock.price - stock.prevPrice) / stock.prevPrice * 100).toFixed(1) : 0;
         const max = (parseFloat(currentPercent) + Math.random() * (20 - currentPercent)).toFixed(1);
-        predictedChanges[stock.symbol] = {current: parseFloat(currentPercent), max: parseFloat(max)};
+        predictedChanges[stock.symbol] = { current: parseFloat(currentPercent), max: parseFloat(max) };
         const item = document.createElement('div');
         item.classList.add('prediction-item');
         item.innerHTML = `${stock.name} may go up ${currentPercent}% to ${max}% in a minute.`;
@@ -384,10 +403,28 @@
       const list = document.getElementById('portfolio-list');
       list.innerHTML = '';
       stocks.forEach(stock => {
-        if (portfolio[stock.symbol] > 0) {
+        const stockData = portfolio[stock.symbol];
+        if (stockData.shares > 0) {
+          // Calculate average purchase price
+          const totalCost = stockData.purchases.reduce((sum, purchase) => sum + purchase.price * purchase.quantity, 0);
+          const totalShares = stockData.purchases.reduce((sum, purchase) => sum + purchase.quantity, 0);
+          const avgPurchasePrice = totalCost / totalShares;
+          // Calculate profit/loss percentage
+          const profitLossPercent = ((stock.price - avgPurchasePrice) / avgPurchasePrice * 100).toFixed(1);
+          const isProfit = stock.price >= avgPurchasePrice;
+          const profitLossClass = isProfit ? 'arrow-up' : 'arrow-down';
+          const profitLossText = isProfit ? `↑ ${profitLossPercent}% profit` : `↓ ${Math.abs(profitLossPercent)}% loss`;
+          // Calculate total current value
+          const totalValue = (stock.price * stockData.shares).toFixed(2);
+
           const item = document.createElement('div');
           item.classList.add('portfolio-item');
-          item.innerHTML = `${stock.name} (${stock.symbol}): ${portfolio[stock.symbol]} shares`;
+          item.innerHTML = `
+            ${stock.name} (${stock.symbol}): ${stockData.shares} shares
+            <span class="bought-price">↳ Bought at $${avgPurchasePrice.toFixed(2)}</span>
+            <div class="profit-loss ${profitLossClass}">${profitLossText}</div>
+            <div class="total-value">Total Value: $${totalValue}</div>
+          `;
           item.onclick = () => selectStock(stock);
           list.appendChild(item);
         }
@@ -399,7 +436,7 @@
         stock.prevPrice = stock.price;
         let changePercent;
         if (predictedChanges[stock.symbol] && Math.random() < 0.6) {
-          const {current, max} = predictedChanges[stock.symbol];
+          const { current, max } = predictedChanges[stock.symbol];
           const variation = (Math.random() * 4 - 2);
           changePercent = Math.min(max, Math.max(current, current + variation));
         } else {
@@ -411,7 +448,7 @@
       updatePortfolio();
       if (selectedStock) {
         updateTotalCost();
-        document.getElementById('sell-btn').disabled = portfolio[selectedStock.symbol] <= 0;
+        document.getElementById('sell-btn').disabled = portfolio[selectedStock.symbol].shares <= 0;
       }
     }
 
@@ -440,8 +477,8 @@
       if (selectedStock) {
         const quantityInput = document.getElementById('quantity');
         let quantity = parseInt(quantityInput.value) || 1;
-        if (actionType === 'sell' && portfolio[selectedStock.symbol] > 0) {
-          quantity = Math.min(quantity, portfolio[selectedStock.symbol]);
+        if (actionType === 'sell' && portfolio[selectedStock.symbol].shares > 0) {
+          quantity = Math.min(quantity, portfolio[selectedStock.symbol].shares);
           quantityInput.value = quantity;
         }
         const totalCost = (selectedStock.price * quantity).toFixed(2);
@@ -465,7 +502,7 @@
       updateTotalCost();
       document.getElementById('action-panel').style.display = 'block';
       document.getElementById('confirmation').style.display = 'none';
-      document.getElementById('sell-btn').disabled = portfolio[stock.symbol] <= 0;
+      document.getElementById('sell-btn').disabled = portfolio[stock.symbol].shares <= 0;
       // Scroll to action-panel on mobile (≤ 767px)
       if (window.innerWidth <= 767) {
         const actionPanel = document.getElementById('action-panel');
@@ -480,8 +517,8 @@
         alert('Not enough cash to buy this amount!');
         return;
       }
-      if (type === 'sell' && quantity > portfolio[selectedStock.symbol]) {
-        alert(`You only own ${portfolio[selectedStock.symbol]} share(s) of ${selectedStock.name}!`);
+      if (type === 'sell' && quantity > portfolio[selectedStock.symbol].shares) {
+        alert(`You only own ${portfolio[selectedStock.symbol].shares} share(s) of ${selectedStock.name}!`);
         return;
       }
       const shareText = quantity === 1 ? 'share' : 'shares';
@@ -500,7 +537,8 @@
         const totalCost = selectedStock.price * quantity;
         if (cash >= totalCost) {
           cash -= totalCost;
-          portfolio[selectedStock.symbol] += quantity;
+          portfolio[selectedStock.symbol].shares += quantity;
+          portfolio[selectedStock.symbol].purchases.push({ price: selectedStock.price, quantity });
           updateCash();
           updatePortfolio();
           alert('Purchase successful!');
@@ -508,13 +546,25 @@
           alert('Not enough cash!');
         }
       } else if (actionType === 'sell') {
-        if (portfolio[selectedStock.symbol] >= quantity) {
+        if (portfolio[selectedStock.symbol].shares >= quantity) {
           cash += selectedStock.price * quantity;
-          portfolio[selectedStock.symbol] -= quantity;
+          portfolio[selectedStock.symbol].shares -= quantity;
+          // Remove oldest purchases first (FIFO)
+          let sharesToRemove = quantity;
+          while (sharesToRemove > 0 && portfolio[selectedStock.symbol].purchases.length > 0) {
+            const purchase = portfolio[selectedStock.symbol].purchases[0];
+            if (purchase.quantity <= sharesToRemove) {
+              sharesToRemove -= purchase.quantity;
+              portfolio[selectedStock.symbol].purchases.shift();
+            } else {
+              purchase.quantity -= sharesToRemove;
+              sharesToRemove = 0;
+            }
+          }
           updateCash();
           updatePortfolio();
           alert('Sale successful!');
-          document.getElementById('sell-btn').disabled = portfolio[selectedStock.symbol] <= 0;
+          document.getElementById('sell-btn').disabled = portfolio[selectedStock.symbol].shares <= 0;
         } else {
           alert('Not enough shares to sell!');
         }
@@ -529,8 +579,8 @@
     document.getElementById('plus-btn').onclick = () => {
       const quantityInput = document.getElementById('quantity');
       let quantity = parseInt(quantityInput.value) || 1;
-      if (actionType === 'sell' && portfolio[selectedStock.symbol] > 0) {
-        quantity = Math.min(quantity + 1, portfolio[selectedStock.symbol]);
+      if (actionType === 'sell' && portfolio[selectedStock.symbol].shares > 0) {
+        quantity = Math.min(quantity + 1, portfolio[selectedStock.symbol].shares);
       } else {
         quantity += 1;
       }
@@ -549,8 +599,8 @@
       if (quantity < 1) {
         quantity = 1;
       }
-      if (actionType === 'sell' && portfolio[selectedStock.symbol] > 0) {
-        quantity = Math.min(quantity, portfolio[selectedStock.symbol]);
+      if (actionType === 'sell' && portfolio[selectedStock.symbol].shares > 0) {
+        quantity = Math.min(quantity, portfolio[selectedStock.symbol].shares);
       }
       quantityInput.value = quantity;
       updateTotalCost();
