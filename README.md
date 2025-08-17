@@ -13,8 +13,8 @@
     }
     body {
       font-family: Arial, sans-serif;
-      background-color: #f0f2f5;
-      color: #333;
+      background-color: #2c2f33; /* Light dark background */
+      color: #e0e0e0; /* Light text for contrast */
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -22,16 +22,16 @@
       padding: 15px;
     }
     h1 {
-      color: #0066cc;
+      color: #4da8ff; /* Brighter blue for contrast */
       font-size: clamp(1.5rem, 5vw, 2rem);
       font-weight: bold;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
       margin: 15px 0 10px;
       text-align: center;
     }
     h2 {
       font-size: clamp(0.85rem, 3.5vw, 1rem);
-      color: #333;
+      color: #d0d0d0; /* Light gray for readability */
       text-align: center;
       max-width: 90%;
       margin: 0 0 20px;
@@ -46,10 +46,10 @@
       position: relative;
     }
     .panel {
-      background-color: #fff;
+      background-color: #3a3d41; /* Slightly lighter than body for contrast */
       padding: 15px;
       border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
       width: 100%;
       max-width: 400px;
       position: relative;
@@ -67,10 +67,10 @@
     }
     #action-panel {
       display: none;
-      background-color: #fff;
+      background-color: #3a3d41;
       padding: 15px;
       border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
       width: 100%;
       max-width: 400px;
     }
@@ -79,12 +79,12 @@
     }
     .portfolio-item, .stock-item, .prediction-item {
       padding: 10px;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid #4a4d51;
       cursor: pointer;
       transition: background-color 0.2s ease;
     }
     .portfolio-item:hover, .stock-item:hover {
-      background-color: #f8f8f8;
+      background-color: #45484d;
     }
     .arrow-up {
       color: #28a745;
@@ -96,6 +96,7 @@
       margin: 0 0 10px;
       font-size: clamp(1rem, 3vw, 1.2rem);
       padding-right: 40px;
+      color: #e0e0e0;
     }
     #action-panel button {
       margin: 8px 4px;
@@ -113,7 +114,7 @@
       background-color: #0052a3;
     }
     #action-panel button:disabled {
-      background-color: #ccc;
+      background-color: #666;
       cursor: not-allowed;
     }
     #confirmation {
@@ -122,7 +123,7 @@
     }
     #confirmation p {
       font-weight: bold;
-      color: #dc3545;
+      color: #ff6b6b; /* Brighter red for contrast */
       font-size: clamp(0.85rem, 2.5vw, 0.95rem);
     }
     #quantity-controls {
@@ -139,8 +140,10 @@
       padding: 0 8px;
       font-size: clamp(0.85rem, 2.5vw, 0.95rem);
       border-radius: 5px;
-      border: 1px solid #ccc;
+      border: 1px solid #555;
       line-height: 36px;
+      background-color: #45484d;
+      color: #e0e0e0;
     }
     #minus-btn, #plus-btn {
       width: 36px;
@@ -150,8 +153,8 @@
       align-items: center;
       font-size: clamp(0.85rem, 2.5vw, 0.95rem);
       border-radius: 5px;
-      border: 1px solid #ccc;
-      background-color: #0066cc; /* Blue to match Buy/Sell buttons */
+      border: 1px solid #555;
+      background-color: #0066cc;
       color: white;
       cursor: pointer;
       transition: background-color 0.2s ease;
@@ -161,13 +164,13 @@
     }
     .note {
       font-size: clamp(0.7rem, 2vw, 0.8rem);
-      color: #666;
+      color: #b0b0b0;
       margin-top: 12px;
       text-align: center;
     }
     .update-note {
       font-size: clamp(0.7rem, 2vw, 0.8rem);
-      color: #333;
+      color: #d0d0d0;
       margin: 0;
     }
     #close-trade {
@@ -176,8 +179,8 @@
       right: 12px;
       font-size: 1.5rem;
       cursor: pointer;
-      color: #333;
-      background-color: #fff;
+      color: #e0e0e0;
+      background-color: #3a3d41;
       padding: 6px;
       border-radius: 50%;
       line-height: 1;
@@ -185,8 +188,8 @@
       transition: color 0.2s ease, background-color 0.2s ease;
     }
     #close-trade:hover {
-      color: #0066cc;
-      background-color: #e8ecef;
+      color: #4da8ff;
+      background-color: #45484d;
     }
     @media (min-width: 768px) {
       .container {
