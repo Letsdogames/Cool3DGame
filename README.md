@@ -5,100 +5,105 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kids' Stock Market Game</title>
   <style>
+    /* Reset default margins and ensure box-sizing */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     body {
       font-family: Arial, sans-serif;
-      background-color: #808080;
+      background-color: #f0f2f5; /* Softer background for better contrast */
       color: #333;
-      margin: 0;
-      padding: 20px;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
+      padding: 15px;
     }
     h1 {
       color: #0066cc;
-      font-size: clamp(1.8rem, 5vw, 2.2rem);
+      font-size: clamp(1.5rem, 5vw, 2rem);
       font-weight: bold;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-      margin: 10px 0;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+      margin: 15px 0 10px;
       text-align: center;
     }
     h2 {
-      font-size: clamp(1rem, 3vw, 1.2rem);
-      color: #FFFFFF;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+      font-size: clamp(0.85rem, 3.5vw, 1rem);
+      color: #333;
       text-align: center;
       max-width: 90%;
-      margin: 0 0 15px 0;
+      margin: 0 0 20px;
     }
     .container {
       display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
+      flex-direction: column;
+      gap: 15px;
       width: 100%;
       max-width: 1200px;
-      justify-content: center;
+      align-items: center;
     }
     .panel {
       background-color: #fff;
       padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       width: 100%;
-      max-width: 350px;
-      box-sizing: border-box;
+      max-width: 400px;
+      position: relative; /* For absolute positioning of close button */
     }
-    #player-info {
-      order: 1;
+    #player-info, #portfolio, #update-note-container, #stock-menu, #predictions, #action-panel {
+      transition: transform 0.2s ease;
     }
-    #portfolio {
-      order: 2;
+    #player-info:hover, #portfolio:hover, #stock-menu:hover, #predictions:hover, #action-panel:hover {
+      transform: translateY(-2px);
     }
     #stock-menu {
-      order: 3;
-      height: 300px;
+      max-height: 300px;
       overflow-y: auto;
       scroll-behavior: smooth;
     }
     #action-panel {
-      order: 4;
-      display: none;
-    }
-    #predictions {
-      order: 5;
-    }
-    #update-note-container {
-      order: 6;
-      text-align: center;
+      display: none; /* Hidden by default, toggled by JS */
     }
     #portfolio-list, #stocks-list, #predictions-list {
       position: relative;
     }
     .portfolio-item, .stock-item, .prediction-item {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
       cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .portfolio-item:hover, .stock-item:hover {
+      background-color: #f8f8f8;
     }
     .arrow-up {
-      color: green;
+      color: #28a745; /* Green for upward trends */
     }
     .arrow-down {
-      color: red;
+      color: #dc3545; /* Red for downward trends */
     }
     #action-panel h3 {
-      margin-top: 0;
+      margin: 0 0 10px;
+      font-size: clamp(1rem, 3vw, 1.2rem);
+      padding-right: 40px; /* Space for close button */
     }
     #action-panel button {
-      margin: 8px;
+      margin: 8px 4px;
       padding: 12px 20px;
-      font-size: clamp(0.9rem, 2.5vw, 1rem);
-      cursor: pointer;
-      min-width: 80px;
+      font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+      min-width: 100px;
       border-radius: 5px;
       border: none;
       background-color: #0066cc;
       color: white;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    #action-panel button:hover:not(:disabled) {
+      background-color: #0052a3;
     }
     #action-panel button:disabled {
       background-color: #ccc;
@@ -110,62 +115,70 @@
     }
     #confirmation p {
       font-weight: bold;
-      color: #ff0000;
+      color: #dc3545;
+      font-size: clamp(0.85rem, 2.5vw, 0.95rem);
     }
     #quantity-controls {
       display: flex;
       align-items: center;
-      margin: 15px 0;
       justify-content: center;
+      margin: 15px 0;
+      gap: 10px;
     }
     #quantity {
-      width: 60px;
+      width: 70px;
       text-align: center;
-      margin: 0 15px;
-      padding: 5px;
-      font-size: clamp(0.9rem, 2.5vw, 1rem);
+      padding: 8px;
+      font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
     .note {
       font-size: clamp(0.7rem, 2vw, 0.8rem);
       color: #666;
-      margin-top: 10px;
+      margin-top: 12px;
+      text-align: center;
     }
     .update-note {
       font-size: clamp(0.7rem, 2vw, 0.8rem);
-      color: #fff;
-      margin-top: 0;
+      color: #333;
+      margin: 0;
     }
     #close-trade {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      font-size: 1.2em;
+      top: 12px;
+      right: 12px;
+      font-size: 1.5rem;
       cursor: pointer;
       color: #333;
+      background-color: #fff;
+      padding: 6px;
+      border-radius: 50%;
+      line-height: 1;
+      z-index: 100; /* Ensure it’s above all content */
+      transition: color 0.2s ease, background-color 0.2s ease;
+    }
+    #close-trade:hover {
+      color: #0066cc;
+      background-color: #e8ecef;
     }
     @media (min-width: 768px) {
       .container {
-        flex-wrap: nowrap;
+        flex-direction: row;
+        flex-wrap: wrap;
         justify-content: space-between;
+        gap: 20px;
       }
       .panel {
-        width: 30%;
-        max-width: 400px;
+        width: calc(33.33% - 14px);
+        max-width: 380px;
       }
-      #player-info {
-        width: 25%;
-        max-width: 250px;
-      }
-      #portfolio {
-        width: 25%;
-        max-width: 250px;
-      }
-      #update-note-container {
-        width: 25%;
-        max-width: 250px;
+      #player-info, #portfolio, #update-note-container {
+        width: calc(25% - 15px);
+        max-width: 300px;
       }
       #stock-menu {
-        height: 400px;
+        max-height: 450px;
       }
     }
     @media (max-width: 767px) {
@@ -173,20 +186,35 @@
         padding: 10px;
       }
       .panel {
-        margin-bottom: 20px;
+        margin-bottom: 15px;
       }
       #stock-menu {
-        height: 250px;
+        max-height: 250px;
       }
       #action-panel button {
-        width: 100%;
-        margin: 8px 0;
+        width: calc(50% - 8px);
       }
       #quantity-controls {
         flex-wrap: wrap;
+        gap: 8px;
       }
       #quantity {
-        margin: 10px 0;
+        margin: 8px 0;
+      }
+      #close-trade {
+        font-size: 1.3rem;
+        padding: 8px;
+      }
+    }
+    @media (max-width: 480px) {
+      h1 {
+        font-size: clamp(1.3rem, 4.5vw, 1.7rem);
+      }
+      h2 {
+        font-size: clamp(0.75rem, 3vw, 0.9rem);
+      }
+      #action-panel button {
+        width: 100%;
       }
     }
   </style>
