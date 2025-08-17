@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -7,80 +7,76 @@
   <style>
     body {
       font-family: Arial, sans-serif;
+      background-color: #808080;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      background-color: #808080;
-      color: #333;
-      position: relative;
     }
     h1 {
       color: #0066cc;
-      font-size: 2.5em;
+      font-size: clamp(1.8rem, 5vw, 2.2rem);
       font-weight: bold;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-      margin: 20px 0 10px 0;
+      margin: 10px 0;
+      text-align: center;
     }
     h2 {
-      font-size: 1.2em;
+      font-size: clamp(1rem, 3vw, 1.2rem);
       color: #FFFFFF;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
       text-align: center;
-      max-width: 600px;
-      margin: 0 0 10px 0;
+      max-width: 90%;
+      margin: 0 0 15px 0;
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      width: 100%;
+      max-width: 1200px;
+      justify-content: center;
+    }
+    .panel {
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 350px;
+      box-sizing: border-box;
     }
     #player-info {
-      position: absolute;
-      right: 20px;
-      top: 140px;
-      background-color: #fff;
-      padding: 10px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      order: 1;
     }
     #portfolio {
-      position: absolute;
-      right: 20px;
-      top: 220px;
-      width: 200px;
-      background-color: #fff;
-      padding: 10px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    #portfolio-list {
-      position: relative;
-    }
-    .portfolio-item {
-      padding: 5px;
-      border-bottom: 1px solid #ddd;
-      cursor: pointer;
-    }
-    #update-note-container {
-      position: absolute;
-      right: 20px;
-      top: 370px;
-      width: 200px;
-      text-align: center;
+      order: 2;
     }
     #stock-menu {
-      width: 300px;
-      height: 240px;
+      order: 3;
+      height: 300px;
       overflow-y: auto;
       scroll-behavior: smooth;
-      background-color: #fff;
-      padding: 10px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      position: absolute;
-      left: 20px;
-      top: 200px;
     }
-    #stocks-list {
+    #action-panel {
+      order: 4;
+      display: none;
+    }
+    #predictions {
+      order: 5;
+    }
+    #update-note-container {
+      order: 6;
+      text-align: center;
+    }
+    #portfolio-list, #stocks-list, #predictions-list {
       position: relative;
     }
-    .stock-item {
-      padding: 5px;
+    .portfolio-item, .stock-item, .prediction-item {
+      padding: 8px;
       border-bottom: 1px solid #ddd;
       cursor: pointer;
     }
@@ -90,28 +86,26 @@
     .arrow-down {
       color: red;
     }
-    #action-panel {
-      width: 300px;
-      background-color: #fff;
-      padding: 10px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      position: absolute;
-      left: 340px;
-      top: 200px;
-      display: none;
-    }
     #action-panel h3 {
       margin-top: 0;
     }
     #action-panel button {
-      margin: 5px;
-      padding: 10px;
-      font-size: 1em;
+      margin: 8px;
+      padding: 12px 20px;
+      font-size: clamp(0.9rem, 2.5vw, 1rem);
       cursor: pointer;
+      min-width: 80px;
+      border-radius: 5px;
+      border: none;
+      background-color: #0066cc;
+      color: white;
+    }
+    #action-panel button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
     }
     #confirmation {
-      margin-top: 10px;
+      margin-top: 15px;
       display: none;
     }
     #confirmation p {
@@ -121,88 +115,122 @@
     #quantity-controls {
       display: flex;
       align-items: center;
-      margin: 10px 0;
+      margin: 15px 0;
+      justify-content: center;
     }
     #quantity {
-      width: 50px;
+      width: 60px;
       text-align: center;
-      margin: 0 10px;
-    }
-    #predictions {
-      width: 300px;
-      background-color: #fff;
-      padding: 10px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      position: absolute;
-      left: 20px;
-      top: 470px;
-    }
-    #predictions-list {
-      position: relative;
-    }
-    .prediction-item {
+      margin: 0 15px;
       padding: 5px;
-      border-bottom: 1px solid #ddd;
+      font-size: clamp(0.9rem, 2.5vw, 1rem);
     }
     .note {
-      font-size: 0.8em;
+      font-size: clamp(0.7rem, 2vw, 0.8rem);
       color: #666;
       margin-top: 10px;
     }
+    .update-note {
+      font-size: clamp(0.7rem, 2vw, 0.8rem);
+      color: #fff;
+      margin-top: 0;
+    }
     #close-trade {
       position: absolute;
-      top: 5px;
+      top: 10px;
       right: 10px;
       font-size: 1.2em;
       cursor: pointer;
       color: #333;
     }
-    .update-note {
-      font-size: 0.8em;
-      color: #fff;
-      margin-top: 0;
+    @media (min-width: 768px) {
+      .container {
+        flex-wrap: nowrap;
+        justify-content: space-between;
+      }
+      .panel {
+        width: 30%;
+        max-width: 400px;
+      }
+      #player-info {
+        width: 25%;
+        max-width: 250px;
+      }
+      #portfolio {
+        width: 25%;
+        max-width: 250px;
+      }
+      #update-note-container {
+        width: 25%;
+        max-width: 250px;
+      }
+      #stock-menu {
+        height: 400px;
+      }
+    }
+    @media (max-width: 767px) {
+      body {
+        padding: 10px;
+      }
+      .panel {
+        margin-bottom: 20px;
+      }
+      #stock-menu {
+        height: 250px;
+      }
+      #action-panel button {
+        width: 100%;
+        margin: 8px 0;
+      }
+      #quantity-controls {
+        flex-wrap: wrap;
+      }
+      #quantity {
+        margin: 10px 0;
+      }
     }
   </style>
 </head>
 <body>
   <h1>Kids' Stock Market Game</h1>
   <h2>This is an example of how stocks work! Trade with fake money to learn, but beware: stocks are risky, and you could lose it all!</h2>
-  <div id="player-info">
-    <h3>My Bank Account: $<span id="cash">400.00</span></h3>
-  </div>
-  <div id="portfolio">
-    <h3>My Portfolio</h3>
-    <div id="portfolio-list"></div>
-    <p class="note">Click on your stock to sell.</p>
-  </div>
-  <div id="update-note-container">
-    <p class="update-note">More updates coming soon!</p>
-  </div>
-  <div id="stock-menu">
-    <h3>Available Stocks</h3>
-    <div id="stocks-list"></div>
-  </div>
-  <div id="predictions">
-    <h3>Predictions</h3>
-    <div id="predictions-list"></div>
-    <p class="note">The prediction is not 100% accurate, this is a value we got doing very complex math</p>
-  </div>
-  <div id="action-panel">
-    <span id="close-trade">✖</span>
-    <h3>Trade <span id="selected-stock-name"></span></h3>
-    <p>Total Cost: $<span id="selected-stock-price"></span></p>
-    <button id="buy-btn">Buy</button>
-    <button id="sell-btn">Sell</button>
-    <div id="quantity-controls">
-      <button id="minus-btn">-</button>
-      <input id="quantity" type="number" value="1" min="1">
-      <button id="plus-btn">+</button>
+  <div class="container">
+    <div id="player-info" class="panel">
+      <h3>My Bank Account: $<span id="cash">400.00</span></h3>
     </div>
-    <div id="confirmation">
-      <p id="confirm-message"></p>
-      <button id="confirm-yes">Yes</button>
-      <button id="confirm-no">No</button>
+    <div id="portfolio" class="panel">
+      <h3>My Portfolio</h3>
+      <div id="portfolio-list"></div>
+      <p class="note">Click on your stock to sell.</p>
+    </div>
+    <div id="update-note-container" class="panel">
+      <p class="update-note">More updates coming soon!</p>
+    </div>
+    <div id="stock-menu" class="panel">
+      <h3>Available Stocks</h3>
+      <div id="stocks-list"></div>
+    </div>
+    <div id="predictions" class="panel">
+      <h3>Predictions</h3>
+      <div id="predictions-list"></div>
+      <p class="note">The prediction is not 100% accurate, this is a value we got doing very complex math</p>
+    </div>
+    <div id="action-panel" class="panel">
+      <span id="close-trade">✖</span>
+      <h3>Trade <span id="selected-stock-name"></span></h3>
+      <p>Total Cost: $<span id="selected-stock-price"></span></p>
+      <button id="buy-btn">Buy</button>
+      <button id="sell-btn">Sell</button>
+      <div id="quantity-controls">
+        <button id="minus-btn">-</button>
+        <input id="quantity" type="number" value="1" min="1">
+        <button id="plus-btn">+</button>
+      </div>
+      <div id="confirmation">
+        <p id="confirm-message"></p>
+        <button id="confirm-yes">Yes</button>
+        <button id="confirm-no">No</button>
+      </div>
     </div>
   </div>
   <script>
