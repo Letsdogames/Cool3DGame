@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -13,7 +13,7 @@
     }
     body {
       font-family: Arial, sans-serif;
-      background-color: #f0f2f5; /* Softer background for better contrast */
+      background-color: #f0f2f5;
       color: #333;
       min-height: 100vh;
       display: flex;
@@ -43,6 +43,7 @@
       width: 100%;
       max-width: 1200px;
       align-items: center;
+      position: relative;
     }
     .panel {
       background-color: #fff;
@@ -51,12 +52,12 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       width: 100%;
       max-width: 400px;
-      position: relative; /* For absolute positioning of close button */
+      position: relative;
     }
-    #player-info, #portfolio, #update-note-container, #stock-menu, #predictions, #action-panel {
+    #player-info, #portfolio, #update-note-container, #stock-menu, #predictions {
       transition: transform 0.2s ease;
     }
-    #player-info:hover, #portfolio:hover, #stock-menu:hover, #predictions:hover, #action-panel:hover {
+    #player-info:hover, #portfolio:hover, #stock-menu:hover, #predictions:hover {
       transform: translateY(-2px);
     }
     #stock-menu {
@@ -65,7 +66,13 @@
       scroll-behavior: smooth;
     }
     #action-panel {
-      display: none; /* Hidden by default, toggled by JS */
+      display: none;
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
     }
     #portfolio-list, #stocks-list, #predictions-list {
       position: relative;
@@ -80,15 +87,15 @@
       background-color: #f8f8f8;
     }
     .arrow-up {
-      color: #28a745; /* Green for upward trends */
+      color: #28a745;
     }
     .arrow-down {
-      color: #dc3545; /* Red for downward trends */
+      color: #dc3545;
     }
     #action-panel h3 {
       margin: 0 0 10px;
       font-size: clamp(1rem, 3vw, 1.2rem);
-      padding-right: 40px; /* Space for close button */
+      padding-right: 40px;
     }
     #action-panel button {
       margin: 8px 4px;
@@ -123,15 +130,34 @@
       align-items: center;
       justify-content: center;
       margin: 15px 0;
-      gap: 10px;
+      gap: 8px;
     }
     #quantity {
       width: 70px;
+      height: 36px;
       text-align: center;
-      padding: 8px;
+      padding: 0 8px;
       font-size: clamp(0.85rem, 2.5vw, 0.95rem);
       border-radius: 5px;
       border: 1px solid #ccc;
+      line-height: 36px;
+    }
+    #minus-btn, #plus-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      background-color: #0066cc; /* Blue to match Buy/Sell buttons */
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    #minus-btn:hover, #plus-btn:hover {
+      background-color: #0052a3;
     }
     .note {
       font-size: clamp(0.7rem, 2vw, 0.8rem);
@@ -155,7 +181,7 @@
       padding: 6px;
       border-radius: 50%;
       line-height: 1;
-      z-index: 100; /* Ensure it’s above all content */
+      z-index: 100;
       transition: color 0.2s ease, background-color 0.2s ease;
     }
     #close-trade:hover {
@@ -166,7 +192,7 @@
       .container {
         flex-direction: row;
         flex-wrap: wrap;
-        justify-content: space-between;
+        justify-content: flex-start;
         gap: 20px;
       }
       .panel {
@@ -180,6 +206,12 @@
       #stock-menu {
         max-height: 450px;
       }
+      #action-panel {
+        position: absolute;
+        left: 420px;
+        top: 200px;
+        width: 380px;
+      }
     }
     @media (max-width: 767px) {
       body {
@@ -191,15 +223,25 @@
       #stock-menu {
         max-height: 250px;
       }
+      #action-panel {
+        position: static;
+        margin-bottom: 15px;
+      }
       #action-panel button {
         width: calc(50% - 8px);
       }
       #quantity-controls {
-        flex-wrap: wrap;
-        gap: 8px;
+        gap: 6px;
       }
       #quantity {
-        margin: 8px 0;
+        margin: 0;
+        height: 32px;
+        line-height: 32px;
+      }
+      #minus-btn, #plus-btn {
+        width: 32px;
+        height: 32px;
+        font-size: clamp(0.8rem, 2vw, 0.9rem);
       }
       #close-trade {
         font-size: 1.3rem;
@@ -244,7 +286,7 @@
       <p class="note">The prediction is not 100% accurate, this is a value we got doing very complex math</p>
     </div>
     <div id="action-panel" class="panel">
-      <span id="close-trade">✖</span>
+      <span id="close-trade" aria-label="Close trade panel">✖</span>
       <h3>Trade <span id="selected-stock-name"></span></h3>
       <p>Total Cost: $<span id="selected-stock-price"></span></p>
       <button id="buy-btn">Buy</button>
@@ -421,6 +463,11 @@
       document.getElementById('action-panel').style.display = 'block';
       document.getElementById('confirmation').style.display = 'none';
       document.getElementById('sell-btn').disabled = portfolio[stock.symbol] <= 0;
+      // Scroll to action-panel on mobile (≤ 767px)
+      if (window.innerWidth <= 767) {
+        const actionPanel = document.getElementById('action-panel');
+        actionPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
 
     function showConfirmation(type) {
