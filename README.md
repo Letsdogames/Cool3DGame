@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stock Market: Can You Earn $1500?</title>
+  <title>Stock Market Game</title>
   <style>
     /* Reset default margins and ensure box-sizing */
     * {
@@ -57,7 +57,7 @@
     #player-info, #portfolio, #update-note-container, #stock-menu, #predictions {
       transition: transform 0.2s ease;
     }
-    #player-info:hover, #portfolio:hover, #update-note-container:hover, #stock-menu:hover, #predictions:hover {
+    #player-info:hover, #portfolio:hover, #stock-menu:hover, #predictions:hover {
       transform: translateY(-2px);
     }
     #stock-menu {
@@ -120,7 +120,7 @@
       padding-right: 40px;
       color: #e0e0e0;
     }
-    #action-panel button {
+    #action-panel button, #reset-btn {
       margin: 8px 4px;
       padding: 12px 20px;
       font-size: clamp(0.85rem, 2.5vw, 0.95rem);
@@ -132,10 +132,10 @@
       cursor: pointer;
       transition: background-color 0.2s ease;
     }
-    #action-panel button:hover:not(:disabled) {
+    #action-panel button:hover:not(:disabled), #reset-btn:hover:not(:disabled) {
       background-color: #0052a3;
     }
-    #action-panel button:disabled {
+    #action-panel button:disabled, #reset-btn:disabled {
       background-color: #666;
       cursor: not-allowed;
     }
@@ -187,15 +187,13 @@
     .note {
       font-size: clamp(0.7rem, 2vw, 0.8rem);
       color: #b0b0b0;
-      margin: 12px 0;
+      margin-top: 12px;
       text-align: center;
     }
     .update-note {
       font-size: clamp(0.7rem, 2vw, 0.8rem);
       color: #d0d0d0;
       margin: 0;
-      list-style-type: disc;
-      padding-left: 20px;
     }
     #close-trade {
       position: absolute;
@@ -214,10 +212,6 @@
     #close-trade:hover {
       color: #4da8ff;
       background-color: #45484d;
-    }
-    .highlight {
-      background-color: #28a745 !important;
-      transition: background-color 2s ease;
     }
     @media (min-width: 768px) {
       .container {
@@ -274,7 +268,7 @@
         position: static;
         margin-bottom: 15px;
       }
-      #action-panel button {
+      #action-panel button, #reset-btn {
         width: calc(50% - 8px);
       }
       #quantity-controls {
@@ -302,18 +296,19 @@
       h2 {
         font-size: clamp(0.75rem, 3vw, 0.9rem);
       }
-      #action-panel button {
+      #action-panel button, #reset-btn {
         width: 100%;
       }
     }
   </style>
 </head>
 <body>
-  <h1 id="game-title">Stock Market: Can You Earn $1500?</h1>
-  <h2>This is an example of how stocks work! Trade with fake money to learn, but beware: stocks are risky</h2>
+  <h1>Stock Market Game</h1>
+  <h2>This is an example of how stocks work! Trade with fake money to learn, but beware: stocks are risky, and you could lose it all!</h2>
   <div class="container">
     <div id="player-info" class="panel">
       <h3>My Bank Account: $<span id="cash">400.00</span></h3>
+      <button id="reset-btn">Reset Game</button>
     </div>
     <div id="portfolio" class="panel">
       <h3>My Portfolio</h3>
@@ -321,25 +316,16 @@
       <p class="note">Click on your stock to sell.</p>
     </div>
     <div id="update-note-container" class="panel">
-      <h3>What's New</h3>
-      <ul class="update-note">
-        <li>Start with $400 to make buying stocks hard.</li>
-        <li>Stock prices change more (up or down 20%).</li>
-        <li>Pay a 1.5% fee to buy or sell.</li>
-        <li>Predictions are right only 40% of the time.</li>
-        <li>Prices update every 25 seconds.</li>
-        <li>Earn 3 random shares when you reach your goal!</li>
-      </ul>
+      <p class="update-note">More updates coming soon!</p>
     </div>
     <div id="stock-menu" class="panel">
       <h3>Available Stocks</h3>
-      <p class="note">Click a stock to buy shares.</p>
       <div id="stocks-list"></div>
     </div>
     <div id="predictions" class="panel">
       <h3>Predictions</h3>
       <div id="predictions-list"></div>
-      <p class="note">Predictions can be wrong, so be careful!</p>
+      <p class="note">The prediction is not 100% accurate, this is a value we got doing very complex math</p>
     </div>
     <div id="action-panel" class="panel">
       <span id="close-trade" aria-label="Close trade panel">✖</span>
@@ -349,7 +335,7 @@
       <button id="sell-btn">Sell</button>
       <div id="quantity-controls">
         <button id="minus-btn">-</button>
-        <input id="quantity" type="number" value="1" min="1" step="1">
+        <input id="quantity" type="number" value="1" min="1">
         <button id="plus-btn">+</button>
       </div>
       <div id="confirmation">
@@ -406,18 +392,47 @@
 
     let cash = 400;
     const portfolio = {};
-    let currentGoal = Math.floor(Math.random() * (2000 - 500 + 1)) + 500;
 
-    function updateTitle() {
-      document.getElementById('game-title').textContent = `Stock Market: Can You Earn $${currentGoal}?`;
+    // Initialize game: Load saved data or set defaults
+    function initializeGame() {
+      const savedCash = localStorage.getItem('stockGameCash');
+      const savedPortfolio = localStorage.getItem('stockGamePortfolio');
+      if (savedCash !== null) {
+        cash = parseFloat(savedCash);
+      }
+      if (savedPortfolio !== null) {
+        Object.assign(portfolio, JSON.parse(savedPortfolio));
+      }
+      stocks.forEach(stock => {
+        if (!portfolio[stock.symbol]) {
+          portfolio[stock.symbol] = { shares: 0, purchases: [] };
+        }
+        const changePercent = (Math.random() - 0.5) * 10;
+        stock.prevPrice = stock.price / (1 + changePercent / 100);
+        stock.price = Math.max(10, Math.min(500, stock.price));
+      });
     }
 
-    stocks.forEach(stock => {
-      portfolio[stock.symbol] = { shares: 0, purchases: [] };
-      const changePercent = (Math.random() - 0.5) * 20;
-      stock.prevPrice = stock.price / (1 + changePercent / 100);
-      stock.price = Math.max(10, Math.min(500, stock.price)).toFixed(2);
-    });
+    // Save game data to localStorage
+    function saveGame() {
+      localStorage.setItem('stockGameCash', cash.toString());
+      localStorage.setItem('stockGamePortfolio', JSON.stringify(portfolio));
+    }
+
+    // Reset game data
+    function resetGame() {
+      if (confirm('Are you sure you want to reset the game? All progress will be lost!')) {
+        cash = 400;
+        stocks.forEach(stock => {
+          portfolio[stock.symbol] = { shares: 0, purchases: [] };
+        });
+        localStorage.removeItem('stockGameCash');
+        localStorage.removeItem('stockGamePortfolio');
+        updateCash();
+        updatePortfolio();
+        alert('Game reset successfully!');
+      }
+    }
 
     let selectedStock = null;
     let actionType = null;
@@ -429,43 +444,14 @@
       const list = document.getElementById('predictions-list');
       list.innerHTML = '';
       selectedStocks.forEach(stock => {
-        const direction = Math.random() < 0.5 ? 'up' : 'down';
-        const percent = (Math.random() * 10).toFixed(1);
-        predictedChanges[stock.symbol] = { direction, percent: parseFloat(percent) };
+        const currentPercent = stock.prevPrice ? ((stock.price - stock.prevPrice) / stock.prevPrice * 100).toFixed(1) : 0;
+        const max = (parseFloat(currentPercent) + Math.random() * (20 - currentPercent)).toFixed(1);
+        predictedChanges[stock.symbol] = { current: parseFloat(currentPercent), max: parseFloat(max) };
         const item = document.createElement('div');
         item.classList.add('prediction-item');
-        item.innerHTML = `${stock.name} may go ${direction} ${percent}% in a minute.`;
+        item.innerHTML = `${stock.name} may go up ${currentPercent}% to ${max}% in a minute.`;
         list.appendChild(item);
       });
-    }
-
-    function calculateTotalWealth() {
-      let portfolioValue = 0;
-      stocks.forEach(stock => {
-        const stockData = portfolio[stock.symbol];
-        portfolioValue += stockData.shares * stock.price;
-      });
-      return (cash + portfolioValue).toFixed(2);
-    }
-
-    function awardRandomShares() {
-      const randomStock = stocks[Math.floor(Math.random() * stocks.length)];
-      const sharesToAward = 3;
-      portfolio[randomStock.symbol].shares += sharesToAward;
-      portfolio[randomStock.symbol].purchases.push({ price: parseFloat(randomStock.price), quantity: sharesToAward });
-      return randomStock.name;
-    }
-
-    function checkGoalCompletion() {
-      const totalWealth = parseFloat(calculateTotalWealth());
-      if (totalWealth >= currentGoal) {
-        const oldGoal = currentGoal;
-        const rewardStockName = awardRandomShares();
-        currentGoal = Math.floor(Math.random() * (2000 - 500 + 1)) + 500;
-        updateTitle();
-        updatePortfolio();
-        alert(`You have completed the quest to earn $${oldGoal}! Here is your reward: 3 random shares from ${rewardStockName}.`);
-      }
     }
 
     function updatePortfolio() {
@@ -476,7 +462,7 @@
         if (stockData.shares > 0) {
           const totalCost = stockData.purchases.reduce((sum, purchase) => sum + purchase.price * purchase.quantity, 0);
           const totalShares = stockData.purchases.reduce((sum, purchase) => sum + purchase.quantity, 0);
-          const avgPurchasePrice = (totalCost / totalShares).toFixed(2);
+          const avgPurchasePrice = totalCost / totalShares;
           const profitLossPercent = ((stock.price - avgPurchasePrice) / avgPurchasePrice * 100).toFixed(1);
           const isProfit = stock.price >= avgPurchasePrice;
           const profitLossClass = isProfit ? 'arrow-up' : 'arrow-down';
@@ -487,7 +473,7 @@
           item.classList.add('portfolio-item');
           item.innerHTML = `
             ${stock.name} (${stock.symbol}): ${stockData.shares} shares
-            <span class="bought-price">↳ Bought at $${avgPurchasePrice}</span>
+            <span class="bought-price">↳ Bought at $${avgPurchasePrice.toFixed(2)}</span>
             <div class="profit-loss ${profitLossClass}">${profitLossText}</div>
             <div class="total-value">Total Value: $${totalValue}</div>
           `;
@@ -495,22 +481,21 @@
           list.appendChild(item);
         }
       });
-      checkGoalCompletion();
+      saveGame(); // Save portfolio changes
     }
 
     function updateStocks() {
       stocks.forEach(stock => {
         stock.prevPrice = stock.price;
         let changePercent;
-        if (Math.random() < 0.07) { // 7% chance for market shock
-          changePercent = (Math.random() - 0.5) * 35; // ±35% for shock
-        } else if (predictedChanges[stock.symbol] && Math.random() < 0.4) {
-          const { direction, percent } = predictedChanges[stock.symbol];
-          changePercent = direction === 'up' ? percent : -percent;
+        if (predictedChanges[stock.symbol] && Math.random() < 0.6) {
+          const { current, max } = predictedChanges[stock.symbol];
+          const variation = (Math.random() * 4 - 2);
+          changePercent = Math.min(max, Math.max(current, current + variation));
         } else {
-          changePercent = (Math.random() - 0.5) * 20;
+          changePercent = (Math.random() - 0.5) * 10;
         }
-        stock.price = Math.max(10, Math.min(500, stock.price * (1 + changePercent / 100))).toFixed(2);
+        stock.price = Math.max(10, Math.min(500, stock.price * (1 + changePercent / 100)));
       });
       displayStocks();
       updatePortfolio();
@@ -535,7 +520,7 @@
         }
         const item = document.createElement('div');
         item.classList.add('stock-item');
-        item.innerHTML = `${stock.name} (${stock.symbol}): $${stock.price} <span class="${arrowClass}">${arrowText}</span>`;
+        item.innerHTML = `${stock.name} (${stock.symbol}): $${stock.price.toFixed(2)} <span class="${arrowClass}">${arrowText}</span>`;
         item.onclick = () => selectStock(stock);
         list.appendChild(item);
       });
@@ -545,18 +530,15 @@
       if (selectedStock) {
         const quantityInput = document.getElementById('quantity');
         let quantity = parseInt(quantityInput.value) || 1;
-        if (actionType === 'buy') {
-          quantity = Math.min(quantity, Math.floor(cash / (selectedStock.price * 1.015)));
-        } else if (actionType === 'sell' && portfolio[selectedStock.symbol].shares > 0) {
+        if (actionType === 'sell' && portfolio[selectedStock.symbol].shares > 0) {
           quantity = Math.min(quantity, portfolio[selectedStock.symbol].shares);
+          quantityInput.value = quantity;
         }
-        quantityInput.value = quantity;
         const totalCost = (selectedStock.price * quantity).toFixed(2);
         document.getElementById('selected-stock-price').textContent = totalCost;
         if (document.getElementById('confirmation').style.display === 'block') {
           const shareText = quantity === 1 ? 'share' : 'shares';
-          const fee = (selectedStock.price * quantity * 0.015).toFixed(2);
-          const message = `Are you sure you want to ${actionType} ${quantity} ${shareText} of ${selectedStock.name} for $${totalCost} plus a $${fee} fee? Do it at your own risk!`;
+          const message = `Are you sure you want to ${actionType} ${quantity} ${shareText} of ${selectedStock.name}? Do it at your own risk!`;
           document.getElementById('confirm-message').textContent = message;
         }
       }
@@ -564,12 +546,7 @@
 
     function updateCash() {
       document.getElementById('cash').textContent = cash.toFixed(2);
-    }
-
-    function highlightPanel(id) {
-      const panel = document.getElementById(id);
-      panel.classList.add('highlight');
-      setTimeout(() => panel.classList.remove('highlight'), 2000);
+      saveGame(); // Save cash changes
     }
 
     function selectStock(stock) {
@@ -588,26 +565,17 @@
 
     function showConfirmation(type) {
       actionType = type;
-      const quantityInput = document.getElementById('quantity');
-      const quantity = parseInt(quantityInput.value) || 1;
-      if (isNaN(quantity) || quantity < 1) {
-        alert('Please enter a valid number of shares (at least 1)!');
-        quantityInput.value = 1;
-        updateTotalCost();
+      const quantity = parseInt(document.getElementById('quantity').value) || 1;
+      if (type === 'buy' && selectedStock.price * quantity > cash) {
+        alert('Not enough cash to buy this amount!');
         return;
       }
-      const totalCost = selectedStock.price * quantity;
-      const fee = totalCost * 0.015;
-      if (type === 'buy' && (cash <= 0 || totalCost + fee > cash)) {
-        alert('Not enough money to buy this amount (including 1.5% fee)!');
-        return;
-      }
-      if (type === 'sell' && (portfolio[selectedStock.symbol].shares <= 0 || quantity > portfolio[selectedStock.symbol].shares)) {
+      if (type === 'sell' && quantity > portfolio[selectedStock.symbol].shares) {
         alert(`You only own ${portfolio[selectedStock.symbol].shares} share(s) of ${selectedStock.name}!`);
         return;
       }
       const shareText = quantity === 1 ? 'share' : 'shares';
-      const message = `Are you sure you want to ${type} ${quantity} ${shareText} of ${selectedStock.name} for $${totalCost.toFixed(2)} plus a $${fee.toFixed(2)} fee? Do it at your own risk!`;
+      const message = `Are you sure you want to ${type} ${quantity} ${shareText} of ${selectedStock.name}? Do it at your own risk!`;
       document.getElementById('confirm-message').textContent = message;
       document.getElementById('action-panel').style.display = 'block';
       document.getElementById('confirmation').style.display = 'block';
@@ -618,24 +586,21 @@
       if (!yes) return;
 
       const quantity = parseInt(document.getElementById('quantity').value) || 1;
-      const totalCost = selectedStock.price * quantity;
-      const fee = totalCost * 0.015;
       if (actionType === 'buy') {
-        if (cash >= totalCost + fee) {
-          cash -= (totalCost + fee);
+        const totalCost = selectedStock.price * quantity;
+        if (cash >= totalCost) {
+          cash -= totalCost;
           portfolio[selectedStock.symbol].shares += quantity;
-          portfolio[selectedStock.symbol].purchases.push({ price: parseFloat(selectedStock.price), quantity });
+          portfolio[selectedStock.symbol].purchases.push({ price: selectedStock.price, quantity });
           updateCash();
           updatePortfolio();
-          highlightPanel('player-info');
-          highlightPanel('portfolio');
-          alert(`Purchase successful! Paid $${totalCost.toFixed(2)} + $${fee.toFixed(2)} fee.`);
+          alert('Purchase successful!');
         } else {
-          alert('Not enough money!');
+          alert('Not enough cash!');
         }
       } else if (actionType === 'sell') {
         if (portfolio[selectedStock.symbol].shares >= quantity) {
-          cash += (totalCost - fee);
+          cash += selectedStock.price * quantity;
           portfolio[selectedStock.symbol].shares -= quantity;
           let sharesToRemove = quantity;
           while (sharesToRemove > 0 && portfolio[selectedStock.symbol].purchases.length > 0) {
@@ -650,16 +615,13 @@
           }
           updateCash();
           updatePortfolio();
-          highlightPanel('player-info');
-          highlightPanel('portfolio');
-          alert(`Sale successful! Received $${totalCost.toFixed(2)} - $${fee.toFixed(2)} fee.`);
+          alert('Sale successful!');
           document.getElementById('sell-btn').disabled = portfolio[selectedStock.symbol].shares <= 0;
         } else {
           alert('Not enough shares to sell!');
         }
       }
       updateTotalCost();
-      checkGoalCompletion();
     }
 
     document.getElementById('buy-btn').onclick = () => showConfirmation('buy');
@@ -669,9 +631,7 @@
     document.getElementById('plus-btn').onclick = () => {
       const quantityInput = document.getElementById('quantity');
       let quantity = parseInt(quantityInput.value) || 1;
-      if (actionType === 'buy') {
-        quantity = Math.min(quantity + 1, Math.floor(cash / (selectedStock.price * 1.015)));
-      } else if (actionType === 'sell' && portfolio[selectedStock.symbol].shares > 0) {
+      if (actionType === 'sell' && portfolio[selectedStock.symbol].shares > 0) {
         quantity = Math.min(quantity + 1, portfolio[selectedStock.symbol].shares);
       } else {
         quantity += 1;
@@ -687,13 +647,11 @@
     };
     document.getElementById('quantity').oninput = () => {
       const quantityInput = document.getElementById('quantity');
-      let quantity = parseInt(quantityInput.value);
-      if (isNaN(quantity) || quantity < 1) {
+      let quantity = parseInt(quantityInput.value) || 1;
+      if (quantity < 1) {
         quantity = 1;
       }
-      if (actionType === 'buy') {
-        quantity = Math.min(quantity, Math.floor(cash / (selectedStock.price * 1.015)));
-      } else if (actionType === 'sell' && portfolio[selectedStock.symbol].shares > 0) {
+      if (actionType === 'sell' && portfolio[selectedStock.symbol].shares > 0) {
         quantity = Math.min(quantity, portfolio[selectedStock.symbol].shares);
       }
       quantityInput.value = quantity;
@@ -701,17 +659,17 @@
     };
     document.getElementById('close-trade').onclick = () => {
       document.getElementById('action-panel').style.display = 'none';
-      document.getElementById('quantity').value = 1;
       selectedStock = null;
       actionType = null;
     };
+    document.getElementById('reset-btn').onclick = resetGame;
 
-    updateTitle();
+    initializeGame();
     generatePredictions();
     displayStocks();
     updateCash();
     updatePortfolio();
-    setInterval(updateStocks, 25000);
+    setInterval(updateStocks, 30000);
     setInterval(generatePredictions, 60000);
   </script>
 </body>
