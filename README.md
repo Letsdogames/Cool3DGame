@@ -9,13 +9,13 @@
         canvas { display: block; }
         #info {
             position: absolute;
-            top: 30px; /* Moved down from 10px to avoid title overlap */
+            top: 30px;
             left: 10px;
             color: white;
             font-family: Arial, sans-serif;
             background: rgba(0, 0, 0, 0.7);
             padding: 10px;
-            z-index: 10; /* Ensure it stays above other elements but below prompt */
+            z-index: 10;
         }
         #startPrompt {
             position: absolute;
@@ -27,16 +27,13 @@
             background: rgba(0, 0, 0, 0.7);
             padding: 20px;
             text-align: center;
-            z-index: 20; /* Ensure it stays on top of info */
+            z-index: 20;
         }
-        /* Hide potential default GitHub Pages headers */
-        h1, h2, h3, h4, h5, h6 {
-            display: none;
-        }
+        h1, h2, h3, h4, h5, h6 { display: none; }
     </style>
 </head>
 <body>
-    <div id="info">WASD: Move | Mouse or Arrow Keys: Rotate | Shift: Lock/Unlock Mouse</div>
+    <div id="info">WASD: Move | Space: Jump | Mouse or Arrow Keys: Rotate | Shift: Lock/Unlock Mouse</div>
     <div id="startPrompt">Click to start the game and lock the mouse!</div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script>
@@ -183,6 +180,12 @@
             }
         });
 
+        // Jumping mechanics
+        let velocityY = 0;
+        const gravity = 0.05;
+        const jumpStrength = 0.3;
+        let isJumping = false;
+
         // Animation loop
         const moveSpeed = 0.1;
         function animate() {
@@ -204,6 +207,19 @@
             if (keys['d']) {
                 humanoid.position.x += moveSpeed * Math.cos(humanoid.rotation.y);
                 humanoid.position.z += moveSpeed * Math.sin(humanoid.rotation.y);
+            }
+
+            // Jumping
+            if (keys[' '] && !isJumping) { // Spacebar to jump
+                velocityY = jumpStrength;
+                isJumping = true;
+            }
+            velocityY -= gravity;
+            humanoid.position.y += velocityY;
+            if (humanoid.position.y < 0) {
+                humanoid.position.y = 0;
+                velocityY = 0;
+                isJumping = false;
             }
 
             // Fallback rotation (Arrow keys)
