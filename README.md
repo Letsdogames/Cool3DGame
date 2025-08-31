@@ -151,10 +151,10 @@
 
         const mouseSensitivity = 0.002;
         const rotateSpeed = 0.05;
-        let yawOffset = 0; // Relative yaw offset from humanoid's rotation
+        let yawOffset = 0;
         let pitch = 0;
-        const maxPitch = Math.PI / 4; // Reduced to limit vertical look
-        const maxYawOffset = Math.PI / 4; // ±45 degrees from humanoid's facing direction
+        const maxPitch = Math.PI / 4;
+        const maxYawOffset = Math.PI / 4;
         document.addEventListener('mousemove', (event) => {
             if (isMouseLocked) {
                 yawOffset -= event.movementX * mouseSensitivity;
@@ -175,14 +175,14 @@
         let lastTime = performance.now();
 
         // Camera smoothing
-        const cameraOffset = new THREE.Vector3(0, 1.5, 4); // Adjusted for tighter third-person view
-        const cameraLerpSpeed = 0.1;
+        const cameraOffset = new THREE.Vector3(0, 1.5, 4);
+        const cameraLerpSpeed = 0.2; // Increased for smoother response
 
         function animate() {
             requestAnimationFrame(animate);
 
             const currentTime = performance.now();
-            const deltaTime = (currentTime - lastTime) / 16.67;
+            const deltaTime = Math.min((currentTime - lastTime) / 16.67, 2); // Cap deltaTime to prevent large jumps
             lastTime = currentTime;
 
             // Movement (WASD) relative to camera's forward direction
@@ -239,7 +239,6 @@
             // Update humanoid rotation to face movement direction
             if (moveDir.length() > 0) {
                 humanoid.rotation.y = Math.atan2(moveDir.x, moveDir.z);
-                // Reset yawOffset when moving to keep camera centered behind humanoid
                 yawOffset = THREE.MathUtils.lerp(yawOffset, 0, 0.1 * deltaTime);
             }
 
@@ -248,11 +247,25 @@
                 cameraOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), humanoid.rotation.y + yawOffset)
             );
             camera.position.lerp(targetCameraPos, cameraLerpSpeed);
-            camera.position.y = humanoid.position.y + 1.5;
 
-            // Update camera rotation to look at humanoid
-            camera.lookAt(humanoid.position.clone().add(new THREE.Vector3(0, 1, 0)));
-            camera.rotation.x = THREE.MathUtils.clamp(camera.rotation.x, -maxPitch, maxPitch);
+            // Set camera height and apply pitch
+            camera.position.y = THREE.MathUtils.lerp(camera.position.y, humanoid.position.y + 1.5, cameraLerpSpeed);
+
+            // Update camera rotation with quaternion to avoid flipping
+            const lookDirection = humanoid.position.clone().sub(camera.position).normalize();
+            const targetQuaternion = new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 0, -1),
+                lookDirection
+            );
+            camera.quaternion.slerp(targetQuaternion, cameraLerpSpeed);
+
+            // Apply pitch constraint
+            const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
+            euler.x = THREE.MathUtils.clamp(euler.x, -maxPitch, maxPitch);
+            camera.rotation.setFromQuaternion(
+                new THREE.Quaternion().setFromEuler(euler),
+                'YXZ'
+            );
 
             renderer.render(scene, camera);
         }
