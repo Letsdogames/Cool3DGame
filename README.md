@@ -133,6 +133,8 @@
             if (event.key === 'Shift') {
                 if (document.pointerLockElement === renderer.domElement) {
                     document.exitPointerLock();
+                    // Reset movement on unlock
+                    keys['w'] = keys['a'] = keys['s'] = keys['d'] = false;
                 } else {
                     try {
                         renderer.domElement.requestPointerLock();
@@ -153,6 +155,9 @@
             isMouseLocked = document.pointerLockElement === renderer.domElement;
             if (isMouseLocked) {
                 document.getElementById('startPrompt').style.display = 'none';
+            } else {
+                // Reset movement on unlock
+                keys['w'] = keys['a'] = keys['s'] = keys['d'] = false;
             }
         });
 
@@ -191,23 +196,23 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Movement (WASD)
-            if (keys['w']) {
-                humanoid.position.z -= moveSpeed * Math.cos(humanoid.rotation.y);
-                humanoid.position.x -= moveSpeed * Math.sin(humanoid.rotation.y);
+            // Movement (WASD) relative to humanoid rotation
+            let moveX = 0;
+            let moveZ = 0;
+            if (keys['w']) moveZ -= 1;
+            if (keys['s']) moveZ += 1;
+            if (keys['a']) moveX -= 1;
+            if (keys['d']) moveX += 1;
+
+            // Normalize movement to prevent speed boost with multiple keys
+            const magnitude = Math.sqrt(moveX * moveX + moveZ * moveZ);
+            if (magnitude > 0) {
+                moveX /= magnitude;
+                moveZ /= magnitude;
             }
-            if (keys['s']) {
-                humanoid.position.z += moveSpeed * Math.cos(humanoid.rotation.y);
-                humanoid.position.x += moveSpeed * Math.sin(humanoid.rotation.y);
-            }
-            if (keys['a']) {
-                humanoid.position.x -= moveSpeed * Math.cos(humanoid.rotation.y);
-                humanoid.position.z -= moveSpeed * Math.sin(humanoid.rotation.y);
-            }
-            if (keys['d']) {
-                humanoid.position.x += moveSpeed * Math.cos(humanoid.rotation.y);
-                humanoid.position.z += moveSpeed * Math.sin(humanoid.rotation.y);
-            }
+
+            humanoid.position.x += moveX * moveSpeed * Math.cos(humanoid.rotation.y) - moveZ * moveSpeed * Math.sin(humanoid.rotation.y);
+            humanoid.position.z += moveX * moveSpeed * Math.sin(humanoid.rotation.y) + moveZ * moveSpeed * Math.cos(humanoid.rotation.y);
 
             // Jumping
             if (keys[' '] && !isJumping) { // Spacebar to jump
