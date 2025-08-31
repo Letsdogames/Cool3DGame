@@ -3,12 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Humanoid Game with Custom Figure</title>
+    <title>Cool3DGame</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
-        #info { position: absolute; top: 10px; left: 10px; color: white; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.7); padding: 10px; }
-        #startPrompt { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.7); padding: 20px; text-align: center; }
+        #info {
+            position: absolute;
+            top: 30px; /* Moved down from 10px to avoid title overlap */
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            z-index: 10; /* Ensure it stays above other elements but below prompt */
+        }
+        #startPrompt {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-family: Arial, sans-serif;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            text-align: center;
+            z-index: 20; /* Ensure it stays on top of info */
+        }
+        /* Hide potential default GitHub Pages headers */
+        h1, h2, h3, h4, h5, h6 {
+            display: none;
+        }
     </style>
 </head>
 <body>
