@@ -89,22 +89,28 @@
 
         scene.add(humanoid);
 
-        // Ground plane with grass texture
+        // Ground plane with grass texture and fallback
         const textureLoader = new THREE.TextureLoader();
-        const grassTexture = textureLoader.load(
-            'https://threejs.org/examples/textures/terrain/grasslight-big.jpg'
-        );
-        grassTexture.wrapS = grassTexture.wrapT = THREE.RepeatWrapping;
-        grassTexture.repeat.set(10, 10);
         const groundGeometry = new THREE.PlaneGeometry(50, 50);
-        const groundMaterial = new THREE.MeshStandardMaterial({
-            map: grassTexture,
-            side: THREE.DoubleSide
-        });
+        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         ground.rotation.x = -Math.PI / 2;
         ground.position.y = -0.1;
         scene.add(ground);
+
+        textureLoader.load(
+            'https://threejs.org/examples/textures/terrain/grasslight-big.jpg',
+            (texture) => {
+                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(10, 10);
+                groundMaterial.map = texture;
+                groundMaterial.needsUpdate = true;
+            },
+            undefined,
+            (error) => {
+                console.warn('Failed to load grass texture, using fallback color:', error);
+            }
+        );
 
         // Lighting
         const ambientLight = new THREE.AmbientLight(0x404040);
@@ -151,14 +157,12 @@
 
         const mouseSensitivity = 0.002;
         const rotateSpeed = 0.05;
-        let yawOffset = 0;
+        let yaw = 0; // Simplified to a single yaw value
         let pitch = 0;
         const maxPitch = Math.PI / 4;
-        const maxYawOffset = Math.PI / 4;
         document.addEventListener('mousemove', (event) => {
             if (isMouseLocked) {
-                yawOffset -= event.movementX * mouseSensitivity;
-                yawOffset = Math.max(-maxYawOffset, Math.min(maxYawOffset, yawOffset));
+                yaw -= event.movementX * mouseSensitivity;
                 pitch -= event.movementY * mouseSensitivity;
                 pitch = Math.max(-maxPitch, Math.min(maxPitch, pitch));
             }
@@ -176,16 +180,16 @@
 
         // Camera smoothing
         const cameraOffset = new THREE.Vector3(0, 1.5, 4);
-        const cameraLerpSpeed = 0.2; // Increased for smoother response
+        const cameraLerpSpeed = 0.3;
 
         function animate() {
             requestAnimationFrame(animate);
 
             const currentTime = performance.now();
-            const deltaTime = Math.min((currentTime - lastTime) / 16.67, 2); // Cap deltaTime to prevent large jumps
+            const deltaTime = Math.min((currentTime - lastTime) / 16.67, 2);
             lastTime = currentTime;
 
-            // Movement (WASD) relative to camera's forward direction
+            // Movement (WASD)
             let moveX = 0;
             let moveZ = 0;
             if (keys['w']) moveZ -= 1;
@@ -195,21 +199,17 @@
 
             // Normalize movement
             const magnitude = Math.sqrt(moveX * moveX + moveZ * moveZ);
+            let moveDir = new THREE.Vector3();
             if (magnitude > 0) {
                 moveX = (moveX / magnitude) * moveSpeed * deltaTime;
                 moveZ = (moveZ / magnitude) * moveSpeed * deltaTime;
+
+                // Calculate movement direction based on yaw
+                const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw).normalize();
+                const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw).normalize();
+                moveDir.addScaledVector(forward, -moveZ).addScaledVector(right, moveX);
+                humanoid.position.add(moveDir);
             }
-
-            // Get camera's forward and right vectors (based on humanoid rotation + yawOffset)
-            const totalYaw = humanoid.rotation.y + yawOffset;
-            const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), totalYaw).normalize();
-            const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), totalYaw).normalize();
-
-            // Calculate movement direction
-            const moveDir = new THREE.Vector3()
-                .addScaledVector(forward, -moveZ)
-                .addScaledVector(right, moveX);
-            humanoid.position.add(moveDir);
 
             // Apply gravity
             velocity.y -= gravity * deltaTime;
@@ -231,41 +231,25 @@
 
             // Fallback rotation (arrow keys)
             if (!isMouseLocked) {
-                if (keys['arrowleft']) yawOffset += rotateSpeed * deltaTime;
-                if (keys['arrowright']) yawOffset -= rotateSpeed * deltaTime;
-                yawOffset = Math.max(-maxYawOffset, Math.min(maxYawOffset, yawOffset));
+                if (keys['arrowleft']) yaw += rotateSpeed * deltaTime;
+                if (keys['arrowright']) yaw -= rotateSpeed * deltaTime;
             }
 
             // Update humanoid rotation to face movement direction
             if (moveDir.length() > 0) {
                 humanoid.rotation.y = Math.atan2(moveDir.x, moveDir.z);
-                yawOffset = THREE.MathUtils.lerp(yawOffset, 0, 0.1 * deltaTime);
             }
 
-            // Smooth camera positioning
+            // Camera positioning
             const targetCameraPos = humanoid.position.clone().add(
-                cameraOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), humanoid.rotation.y + yawOffset)
+                cameraOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw)
             );
             camera.position.lerp(targetCameraPos, cameraLerpSpeed);
-
-            // Set camera height and apply pitch
             camera.position.y = THREE.MathUtils.lerp(camera.position.y, humanoid.position.y + 1.5, cameraLerpSpeed);
 
-            // Update camera rotation with quaternion to avoid flipping
-            const lookDirection = humanoid.position.clone().sub(camera.position).normalize();
-            const targetQuaternion = new THREE.Quaternion().setFromUnitVectors(
-                new THREE.Vector3(0, 0, -1),
-                lookDirection
-            );
-            camera.quaternion.slerp(targetQuaternion, cameraLerpSpeed);
-
-            // Apply pitch constraint
-            const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
-            euler.x = THREE.MathUtils.clamp(euler.x, -maxPitch, maxPitch);
-            camera.rotation.setFromQuaternion(
-                new THREE.Quaternion().setFromEuler(euler),
-                'YXZ'
-            );
+            // Camera rotation (simplified to prevent flipping)
+            camera.rotation.order = 'YXZ';
+            camera.rotation.set(pitch, yaw, 0);
 
             renderer.render(scene, camera);
         }
