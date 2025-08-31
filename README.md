@@ -41,7 +41,7 @@
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true }); // Enable antialiasing for smoother visuals
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
@@ -151,45 +151,45 @@
 
         const mouseSensitivity = 0.002;
         const rotateSpeed = 0.05;
-        let yaw = 0; // Horizontal rotation
-        let pitch = 0; // Vertical rotation
-        const maxPitch = Math.PI / 2; // Limit vertical look to 90 degrees
+        let yaw = 0;
+        let pitch = 0;
+        const maxPitch = Math.PI / 2;
         document.addEventListener('mousemove', (event) => {
             if (isMouseLocked) {
                 yaw -= event.movementX * mouseSensitivity;
                 pitch -= event.movementY * mouseSensitivity;
-                pitch = Math.max(-maxPitch, Math.min(maxPitch, pitch)); // Clamp pitch
+                pitch = Math.max(-maxPitch, Math.min(maxPitch, pitch));
             }
         });
 
         // Movement and physics
         const moveSpeed = 0.1;
-        const gravity = 0.02; // Increased gravity for less floaty jumps
-        const jumpStrength = 0.4; // Adjusted for balance
+        const gravity = 0.02;
+        const jumpStrength = 0.4;
         let velocity = new THREE.Vector3(0, 0, 0);
         let isJumping = false;
         let lastJumpTime = 0;
-        const jumpCooldown = 500; // 500ms cooldown between jumps
+        const jumpCooldown = 500;
         let lastTime = performance.now();
 
         // Camera smoothing
-        const cameraOffset = new THREE.Vector3(0, 2, 5); // Base offset from humanoid
-        const cameraLerpSpeed = 0.1; // Smoothing factor
+        const cameraOffset = new THREE.Vector3(0, 2, 5);
+        const cameraLerpSpeed = 0.1;
 
         function animate() {
             requestAnimationFrame(animate);
 
             const currentTime = performance.now();
-            const deltaTime = (currentTime - lastTime) / 16.67; // Normalize to ~60 FPS
+            const deltaTime = (currentTime - lastTime) / 16.67;
             lastTime = currentTime;
 
-            // Movement (WASD) relative to camera yaw
+            // Movement (WASD) relative to camera's forward direction
             let moveX = 0;
             let moveZ = 0;
-            if (keys['w']) moveZ -= 1;
-            if (keys['s']) moveZ += 1;
-            if (keys['a']) moveX -= 1;
-            if (keys['d']) moveX += 1;
+            if (keys['w']) moveZ -= 1; // Forward
+            if (keys['s']) moveZ += 1;  // Backward
+            if (keys['a']) moveX -= 1;  // Left
+            if (keys['d']) moveX += 1;  // Right
 
             // Normalize movement
             const magnitude = Math.sqrt(moveX * moveX + moveZ * moveZ);
@@ -198,12 +198,14 @@
                 moveZ = (moveZ / magnitude) * moveSpeed * deltaTime;
             }
 
-            // Apply movement relative to yaw
-            const moveDir = new THREE.Vector3(
-                moveX * Math.cos(yaw) - moveZ * Math.sin(yaw),
-                0,
-                moveZ * Math.cos(yaw) + moveX * Math.sin(yaw)
-            );
+            // Get camera's forward and right vectors
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).setY(0).normalize();
+            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).setY(0).normalize();
+
+            // Calculate movement direction
+            const moveDir = new THREE.Vector3()
+                .addScaledVector(forward, -moveZ) // Forward/backward (negate moveZ for correct direction)
+                .addScaledVector(right, moveX);   // Left/right
             humanoid.position.add(moveDir);
 
             // Apply gravity
@@ -230,16 +232,22 @@
                 if (keys['arrowright']) yaw -= rotateSpeed * deltaTime;
             }
 
-            // Update humanoid rotation
-            humanoid.rotation.y = yaw;
+            // Update camera rotation
+            camera.rotation.order = 'YXZ'; // Ensure yaw is applied before pitch
+            camera.rotation.y = yaw;
+            camera.rotation.x = pitch;
+
+            // Update humanoid rotation to face movement direction
+            if (moveDir.length() > 0) {
+                humanoid.rotation.y = Math.atan2(moveDir.x, moveDir.z);
+            }
 
             // Smooth camera positioning
             const targetCameraPos = humanoid.position.clone().add(
                 cameraOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw)
             );
             camera.position.lerp(targetCameraPos, cameraLerpSpeed);
-            camera.position.y = humanoid.position.y + 2; // Keep height consistent
-            camera.lookAt(humanoid.position.clone().add(new THREE.Vector3(0, 1, 0)));
+            camera.position.y = humanoid.position.y + 2;
 
             renderer.render(scene, camera);
         }
